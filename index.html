@@ -482,6 +482,7 @@
   }
 
   document.addEventListener('keydown', function(e) {
+    if (document.activeElement === nameInput) return;
     switch(e.key) {
       case 'ArrowUp':   case 'w': case 'W': e.preventDefault(); steer(0,-1); break;
       case 'ArrowDown': case 's': case 'S': e.preventDefault(); steer(0, 1); break;
