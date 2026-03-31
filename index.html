@@ -262,17 +262,60 @@
   var db = firebase.database();
   var scoresRef = db.ref('scores');
 
+  // --- Profanity filter ---
+  var banned = ['fuck','shit','ass','bitch','cunt','dick','cock','pussy','nigger','nigga',
+    'faggot','fag','whore','slut','bastard','damn','piss','porn','sex','boob','tit',
+    'penis','vagina','horny','nude','naked','rape','anal','cum','jizz','dildo','boner',
+    'erect','masturbat','orgasm','xxx','milf','ass','butthole','anus','balls','scrotum'];
+
+  function containsBannedWord(str) {
+    var lower = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (var i = 0; i < banned.length; i++) {
+      if (lower.indexOf(banned[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  // --- Josh Griffin always #1 ---
+  var jgKey = null;
+
+  function ensureJGOnTop(entries) {
+    var nonJG = entries.filter(function(e) { return !e.jg; });
+    var topNonJG = nonJG.length > 0 ? nonJG[0].score : 0;
+    var jgEntry = entries.find(function(e) { return e.jg; });
+    var neededScore = topNonJG + 1;
+
+    if (!jgEntry || jgEntry.score <= topNonJG) {
+      // Update or create JG entry
+      if (jgKey) {
+        db.ref('scores/' + jgKey).update({ score: neededScore, ts: Date.now() });
+      } else {
+        var ref = scoresRef.push({ name: 'Josh Griffin', score: neededScore, ts: Date.now(), jg: true });
+        jgKey = ref.key;
+      }
+    } else if (jgEntry) {
+      jgKey = jgEntry._key;
+    }
+  }
+
   // --- Leaderboard ---
   var topScores = [];
 
   function loadLeaderboard() {
-    scoresRef.orderByChild('score').limitToLast(5).on('value', function(snap) {
+    scoresRef.orderByChild('score').limitToLast(6).on('value', function(snap) {
       var entries = [];
       snap.forEach(function(child) {
-        entries.push(child.val());
+        var val = child.val();
+        val._key = child.key;
+        if (val.jg) jgKey = child.key;
+        entries.push(val);
       });
       entries.sort(function(a, b) { return b.score - a.score; });
-      topScores = entries;
+
+      ensureJGOnTop(entries);
+
+      // Show top 5 only
+      topScores = entries.slice(0, 5);
       renderLeaderboard();
     });
   }
@@ -288,7 +331,7 @@
     container.innerHTML = topScores.map(function(entry, i) {
       return '<div class="lb-row">' +
         '<span class="lb-rank ' + (rankClasses[i] || '') + '">' + rankSymbols[i] + '</span>' +
-        '<span class="lb-name">' + escapeHtml(entry.name) + '</span>' +
+        '<span class="lb-name">' + escapeHtml(entry.name) + (entry.jg ? ' &#128081;' : '') + '</span>' +
         '<span class="lb-score">' + entry.score + '</span>' +
         '</div>';
     }).join('');
@@ -303,12 +346,19 @@
   }
 
   function isTopFive(s) {
-    if (topScores.length < 5) return true;
-    return s > topScores[topScores.length - 1].score;
+    var nonJG = topScores.filter(function(e) { return !e.jg; });
+    if (nonJG.length < 4) return true;
+    return s > nonJG[nonJG.length - 1].score;
   }
 
   function submitScore(name, s) {
-    scoresRef.push({ name: name.trim() || 'Anonymous', score: s, ts: Date.now() });
+    if (containsBannedWord(name)) {
+      alert('Please choose an appropriate name.');
+      return false;
+    }
+    var cleanName = name.trim() || 'Anonymous';
+    scoresRef.push({ name: cleanName, score: s, ts: Date.now() });
+    return true;
   }
 
   loadLeaderboard();
@@ -385,7 +435,7 @@
 
   submitBtn.addEventListener('click', function() {
     var name = nameInput.value.trim() || 'Anonymous';
-    submitScore(name, score);
+    if (!submitScore(name, score)) return;
     nameEntry.style.display = 'none';
     startBtn.style.display  = '';
   });
