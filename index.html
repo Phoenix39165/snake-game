@@ -263,15 +263,76 @@
   var scoresRef = db.ref('scores');
 
   // --- Profanity filter ---
-  var banned = ['fuck','shit','ass','bitch','cunt','dick','cock','pussy','nigger','nigga',
-    'faggot','fag','whore','slut','bastard','damn','piss','porn','sex','boob','tit',
-    'penis','vagina','horny','nude','naked','rape','anal','cum','jizz','dildo','boner',
-    'erect','masturbat','orgasm','xxx','milf','ass','butthole','anus','balls','scrotum'];
+  var banned = [
+    'fuck','fuk','fck','fuq','fuxk','fvck',
+    'shit','sht','shyt','sh1t',
+    'ass','arse','azz',
+    'bitch','btch','biatch','bytch',
+    'cunt','kunt','cvnt',
+    'dick','dik','d1ck','dck',
+    'cock','cok','c0ck','cawk',
+    'pussy','puss','pvssy',
+    'nigger','nigga','n1gger','nig',
+    'faggot','fag','fagot',
+    'whore','whor','h0re',
+    'slut','sl0t',
+    'piss','pis',
+    'porn','pr0n','p0rn',
+    'sex','sexi','sexx',
+    'boob','b00b','boobie','boobies','bewb',
+    'tit','titt','titty','titties','t1t',
+    'penis','pen1s','peni5',
+    'vagina','vag','vaj','vajina',
+    'horny','h0rny',
+    'nude','nud3',
+    'naked','nak3d',
+    'rape','r4pe',
+    'anal','an4l',
+    'cum','c0m','cvm',
+    'jizz','jiz','jism',
+    'dildo','dild0',
+    'boner','b0ner',
+    'erect',
+    'orgasm',
+    'xxx',
+    'milf',
+    'butthole','buthole','butt',
+    'anus','an0s',
+    'balls','ballz','balz','bal1s','nutz','nuts',
+    'scrotum','scrot',
+    'hairy','hairyball',
+    'wetdream','hardon','hardcock',
+    'blowjob','blowj0b','handjob',
+    'masturbat','mastrubat',
+    'clit','klit',
+    'sperm','semen',
+    'twat','tw4t',
+    'wank','w4nk'
+  ];
+
+  function normalizeLeet(str) {
+    return str.toLowerCase()
+      .replace(/0/g, 'o')
+      .replace(/1/g, 'i')
+      .replace(/3/g, 'e')
+      .replace(/4/g, 'a')
+      .replace(/5/g, 's')
+      .replace(/6/g, 'g')
+      .replace(/7/g, 't')
+      .replace(/8/g, 'b')
+      .replace(/@/g, 'a')
+      .replace(/\$/g, 's')
+      .replace(/!/g, 'i')
+      .replace(/\+/g, 't')
+      .replace(/[^a-z]/g, '');
+  }
 
   function containsBannedWord(str) {
-    var lower = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    var clean   = str.toLowerCase().replace(/[^a-z]/g, '');
+    var normed  = normalizeLeet(str);
     for (var i = 0; i < banned.length; i++) {
-      if (lower.indexOf(banned[i]) !== -1) return true;
+      if (clean.indexOf(banned[i]) !== -1) return true;
+      if (normed.indexOf(banned[i]) !== -1) return true;
     }
     return false;
   }
